@@ -15,9 +15,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-
+import java.util.TimerTask;
+import java.util.Timer;  
 public class MyPanel extends JPanel implements KeyListener {
+	private static Watch watch=new Watch();
+	private static HashMap<String, Long> record=new HashMap<String, Long>(); 
 	private boolean[] isFree = new boolean[36];
 	private int currentCar = 1;// 1,2,3,4,5,6
 	private int currentGame = 0;// firstly 0
@@ -36,6 +40,14 @@ public class MyPanel extends JPanel implements KeyListener {
 	}
 	
 	public void initialize() {
+		/**********这里需要一个函数把txt里面的记录放进来*********  新写一个类 参数是文件的路径 String path和 HashMap<String, Long> record*/
+		for(int i=0;i<2;i++){
+			char ch=(char)(i+'0');
+			record.put(ch+"", (long) 999999);
+			//System.out.println(ch+""+"      "+record.get(ch+""));
+		}
+		
+		watch.start();
 		currentGame=0;
 		totalSteps=0;
 		String fileName = "src/CarPosition.txt";
@@ -73,6 +85,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		System.out.println("carList of game0");
 		printCarList(initialCars);
 		*/
+		repaint();
 	} 
 	public void gotoNextGame(){
 		if(currentGame<(allGames.size()-1)){
@@ -81,6 +94,7 @@ public class MyPanel extends JPanel implements KeyListener {
 			currentCar = 1;
 			currentOperation = 0;
 			totalSteps=0;
+			watch.start();
 			currentGameOperations.clear();
 //			for(int i=0;i<6;i++){//initialCars已被初始化
 //				Car tempCar=new Car();
@@ -88,12 +102,18 @@ public class MyPanel extends JPanel implements KeyListener {
 //				initialCars.set(i,tempCar);
 //			}
 			//initialCars=(ArrayList<Car>)allGames.get(currentGame).getCarList().clone();
-			Iterator<Car> iterator = allGames.get(currentGame).getCarList().iterator();   
+		//	Iterator<Car> iterator = allGames.get(currentGame).getCarList().iterator();   
+		//	while(iterator.hasNext()){   
+		//	    initialCars.add(iterator.next().clone());   
+		//	} 
 			initialCars.clear();
-			
-			while(iterator.hasNext()){   
-			    initialCars.add(iterator.next().clone());   
-			} 
+			for(int i=0;i<allGames.get(currentGame).getCarList().size();i++){
+				Car tempCar=new Car();
+				tempCar.setBlocks(allGames.get(currentGame).getCarList().get(i).getBlocks());
+				tempCar.setVertical(allGames.get(currentGame).getCarList().get(i).isVertical());
+				tempCar.setVisible(allGames.get(currentGame).getCarList().get(i).isVisible());
+				initialCars.add(tempCar);
+			}
 			for(int i=0;i<36;i++){
 				isFree[i]=true;
 			}
@@ -143,7 +163,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		}
 		allGameNum = gameNum;// 总的局数
 	}
-
+/**************Main************/
 	public static void main(String[] args) {
 		
 		MyPanel myPanel = new MyPanel();
@@ -166,7 +186,6 @@ public class MyPanel extends JPanel implements KeyListener {
 		myPanel.setSize(700, 700);
 		myPanel.setLocation(150, 100);
 		myPanel.setLayout(null);
-
 		JButton skipButton = new JButton("Skip");
 		JButton undoButton = new JButton("Undo");
 		JButton resetButton = new JButton("Reset");
@@ -179,16 +198,12 @@ public class MyPanel extends JPanel implements KeyListener {
 		skipButton.addActionListener(myPanel.new SkipHandler());
 		undoButton.addActionListener(myPanel.new UndoHandler());
 		resetButton.addActionListener(myPanel.new ResetHandler());
-		           	
-		
-//		
 //		//option
 //		int result=JOptionPane.showConfirmDialog(null, 
 //				"start a new game?" , "you win",  JOptionPane.CANCEL_OPTION);
 //		System.out.println("resultttttttttttttt:"+result);
-//
-
 		myPanel.initialize();
+		new Timer().schedule(myPanel.new MyTimerTask(), 1000);   
 	}
 	
 /****************事件监听器********************/
@@ -350,6 +365,7 @@ public class MyPanel extends JPanel implements KeyListener {
 			currentGameOperations.clear();
 			repaint();
 			System.out.println("reset over");
+			watch.start();
 			MyPanel.this.requestFocus();
 		}
 	}
@@ -369,7 +385,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		}
 		
 		g.drawString("steps:"+totalSteps, 100,100);
-
+		drawTime(g);
 		drawCars(allGames.get(currentGame).getCarList(), g);
 	}
 /*****************画小车*****************/
@@ -410,8 +426,11 @@ public class MyPanel extends JPanel implements KeyListener {
 
 		}
 		System.out.println("draw cars over");
-
 	}
+	/*******************drawTime**********************/
+public void drawTime(Graphics g){
+	g.drawString((int)(30-watch.getNowTime()/1000)+"", 200, 10);
+}
 /********************键盘事件**********************/
 	public MyPanel() { // 注册监听器
 		addKeyListener(this);
@@ -520,6 +539,14 @@ public class MyPanel extends JPanel implements KeyListener {
 			} else if (KeyChar == 'd') {// right//maybe win
 				if(currentCar==1&&blocks[1]==17){//success
 					System.out.println("success!!!!!!!!!");
+					/***         **/
+					watch.end();
+					System.out.println("getTime"+watch.getTime());
+					long thisRecord=watch.getTime();
+					if(record.get(currentGame+"").compareTo(thisRecord)>0){
+						record.replace(currentGame+"",record.get(currentGame+""), thisRecord);
+						/***************这里要将记录的txt清空 把新的record写进去***************/
+					}
 					gotoNextGame();return;
 				}
 				System.out.println("press ddddddddddddddd");
@@ -561,17 +588,27 @@ public class MyPanel extends JPanel implements KeyListener {
 		}
 	}
 	
+	class MyTimerTask extends TimerTask {  
+        @Override  
+        public void run() {  
+        	repaint();
+        	if(Math.abs(watch.getNowTime())<1){
+        		/*******弹出对话框  reset or skip*******/
+        		
+        	}
+            new Timer().schedule(new MyTimerTask(), 1000);  
+        }  
+    }  
 }
 
 class MyJFrame extends JFrame {
 	public MyJFrame(String string,MyPanel myPanel) {
 		// TODO Auto-generated constructor stub
 		super(string);
-		
 		JMenuBar jMenuBar=new JMenuBar();
 		JMenu startJMenu=new JMenu("start");
 		JMenuItem jMenuItem1=new JMenuItem("new game");
-		jMenuItem1.addActionListener(myPanel.new SkipHandler());
+		jMenuItem1.addActionListener(myPanel.new NewGame());
 		startJMenu.add(jMenuItem1);
 		jMenuBar.add(startJMenu);
 		this.setJMenuBar(jMenuBar);
