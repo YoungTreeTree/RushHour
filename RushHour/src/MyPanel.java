@@ -70,9 +70,9 @@ public class MyPanel extends JPanel implements KeyListener {
 		while(iterator.hasNext()){   
 		    initialCars.add(iterator.next().clone());   
 		}  
-		*/
 		System.out.println("carList of game0");
 		printCarList(initialCars);
+		*/
 	} 
 	public void gotoNextGame(){
 		if(currentGame<(allGames.size()-1)){
@@ -110,6 +110,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		int gameNum = 0;// 当前局数
 		int carNum = 0;// 当前哪辆小车
 		int allGameNum = 0;
+		allGames.clear();
 		try {
 			FileInputStream fileInputStream = new FileInputStream(fileName);
 			InputStreamReader inputStreamReader = new InputStreamReader(
@@ -146,7 +147,7 @@ public class MyPanel extends JPanel implements KeyListener {
 	public static void main(String[] args) {
 		
 		MyPanel myPanel = new MyPanel();
-		MyJFrame jFrame = new MyJFrame("Rush Hour");
+		MyJFrame jFrame = new MyJFrame("Rush Hour",myPanel);
 		jFrame.setBounds(0, 0, 850, 800);
 		jFrame.setDefaultCloseOperation(jFrame.EXIT_ON_CLOSE);
 		jFrame.setVisible(true);
@@ -178,7 +179,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		skipButton.addActionListener(myPanel.new SkipHandler());
 		undoButton.addActionListener(myPanel.new UndoHandler());
 		resetButton.addActionListener(myPanel.new ResetHandler());
-		
+		           	
 		
 //		
 //		//option
@@ -190,7 +191,13 @@ public class MyPanel extends JPanel implements KeyListener {
 		myPanel.initialize();
 	}
 	
-
+/****************事件监听器********************/
+	class NewGame implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			System.out.println("initialize");
+			initialize();
+		}
+	}
 	class SkipHandler implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			System.out.println("press skip");
@@ -365,7 +372,7 @@ public class MyPanel extends JPanel implements KeyListener {
 
 		drawCars(allGames.get(currentGame).getCarList(), g);
 	}
-
+/*****************画小车*****************/
 	public void drawCars(ArrayList<Car> cars, Graphics g) {// draw cars by
 															// ArrayList<cCar>
 		System.out.println("drawing cars:");
@@ -405,7 +412,7 @@ public class MyPanel extends JPanel implements KeyListener {
 		System.out.println("draw cars over");
 
 	}
-
+/********************键盘事件**********************/
 	public MyPanel() { // 注册监听器
 		addKeyListener(this);
 	}
@@ -552,5 +559,22 @@ public class MyPanel extends JPanel implements KeyListener {
 			// allGames.get(currentGame).setCarList(carsArrayList);
 			repaint();
 		}
+	}
+	
+}
+
+class MyJFrame extends JFrame {
+	public MyJFrame(String string,MyPanel myPanel) {
+		// TODO Auto-generated constructor stub
+		super(string);
+		
+		JMenuBar jMenuBar=new JMenuBar();
+		JMenu startJMenu=new JMenu("start");
+		JMenuItem jMenuItem1=new JMenuItem("new game");
+		jMenuItem1.addActionListener(myPanel.new SkipHandler());
+		startJMenu.add(jMenuItem1);
+		jMenuBar.add(startJMenu);
+		this.setJMenuBar(jMenuBar);
+		
 	}
 }
